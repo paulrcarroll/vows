@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phaser 3 Celebration</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <script src=" https://cdn.jsdelivr.net/npm/@samme/colors@1.2.0/dist/colors.umd.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0f0c29;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const { red, orange, yellow, lime, green, aqua, blue, fuchsia, purple } =
+        colors.hexColors;
+
+      const tints = [
+        red,
+        orange,
+        yellow,
+        lime,
+        green,
+        aqua,
+        blue,
+        fuchsia,
+        purple,
+      ];
+
+      const config = {
+        type: Phaser.WEBGL,
+        scene: {
+          preload,
+          init,
+          create,
+        },
+        loader: {
+          baseURL: "http://127.0.0.1:5500",
+          crossOrigin: "anonymous",
+        },
+        audio: { noAudio: true },
+      };
+
+      const emitterConfig = {
+        alpha: { start: 1, end: 0, ease: "Cubic.easeIn" },
+        angle: { start: 0, end: 360, steps: 100 },
+        rotate: {
+          onEmit: updateParticleRotation,
+          onUpdate: updateParticleRotation,
+        },
+        blendMode: "ADD",
+        gravityY: 128,
+        lifespan: 3000,
+        quantity: 500,
+        reserve: 500,
+        scaleX: { onUpdate: (p) => Phaser.Math.Easing.Cubic.Out(1 - p.lifeT) },
+        speed: { min: 128, max: 256 },
+      };
+
+      const { Between, FloatBetween, RadToDeg } = Phaser.Math;
+      const { GetRandom } = Phaser.Utils.Array;
+
+      function init() {
+        const stars = this.textures.createCanvas("stars", 1024, 768);
+        const ctx = stars.getContext();
+        const { black, white } = colors.cssColors;
+
+        ctx.fillStyle = black;
+        ctx.fillRect(0, 0, 1024, 768);
+        ctx.fillStyle = white;
+
+        let i = 1024;
+        while (i-- > 0) {
+          ctx.globalAlpha = FloatBetween(0, 1);
+          ctx.fillRect(Between(0, 1023), Between(0, 767), 1, 1);
+        }
+
+        stars.refresh();
+
+        this.textures.generate("rocket", {
+          data: ["0123..."],
+          palette: {
+            0: "#fff2",
+            1: "#fff4",
+            2: "#fff8",
+            3: "#ffff",
+          },
+          pixelWidth: 4,
+        });
+      }
+
+      function preload() {
+        this.load.crossOrigin = "anonymous"; // or 'use-credentials'
+        this.load.setCORS(true);
+        // this.load.image('unique_key', 'path/to/image.png')
+        this.load.image("img1", "1.JPG");
+        this.load.image("img2", "2.JPG");
+        this.load.image("img3", "3.JPG");
+      }
+
+      function create() {
+        const textList = [
+          "April 7, 2019!",
+          "Assume Love First!",
+          "Paul and Natalie!",
+          "Two cats!",
+        ];
+        let currentIndex = 0;
+
+        this.add.image(0, 0, "stars").setOrigin(0, 0);
+
+        this.add.image(100, 500, "img3").setScale(0.3).setAlpha(0.6);
+
+        const particles = this.add.particles("rocket");
+
+        const emitter1 = particles
+          .createEmitter(emitterConfig)
+          .setFrequency(3000);
+        const emitter2 = particles
+          .createEmitter(emitterConfig)
+          .setFrequency(4000);
+        const emitter3 = particles
+          .createEmitter(emitterConfig)
+          .setFrequency(5000);
+
+        updateEmitter(emitter1);
+        updateEmitter(emitter2);
+        updateEmitter(emitter3);
+
+        this.time.addEvent({
+          delay: emitter1.frequency,
+          repeat: -1,
+          callback: () => {
+            updateEmitter(emitter1);
+          },
+        });
+
+        this.time.addEvent({
+          delay: emitter2.frequency,
+          repeat: -1,
+          callback: () => {
+            updateEmitter(emitter2);
+          },
+        });
+
+        this.time.addEvent({
+          delay: emitter3.frequency,
+          repeat: -1,
+          callback: () => {
+            updateEmitter(emitter3);
+          },
+        });
+
+        const runSequence = () => {
+          if (currentIndex >= textList.length) currentIndex = 0;
+          const currentText = textList[currentIndex++];
+
+          // 2. Create Text at the bottom
+          const textObj = this.add
+            .text(400, 550, currentText, {
+              fontFamily: "Arial Black",
+              fontSize: "80px",
+              color: "#f9ed69",
+              stroke: "#b83b5e",
+              strokeThickness: 12,
+            })
+            .setOrigin(0.5)
+            .setAlpha(0);
+
+          // 4. Main Animation: Rise, Scale, and Fade
+          this.tweens.add({
+            targets: textObj,
+            y: 150,
+            alpha: { from: 0, to: 1 },
+            scale: { from: 0.2, to: 1.2 },
+            duration: 4000,
+            ease: "Cubic.out",
+            onComplete: () => {
+              // Quick fade out at the top
+              this.tweens.add({
+                targets: textObj,
+                alpha: 0,
+                scale: 1.5,
+                duration: 500,
+                onComplete: () => {
+                  textObj.destroy();
+                  // Delay slightly before the next word
+                  this.time.delayedCall(500, runSequence);
+                },
+              });
+            },
+          });
+        };
+
+        runSequence();
+      }
+
+      function updateEmitter(emitter) {
+        emitter
+          .setPosition(
+            1024 * FloatBetween(0.25, 0.75),
+            768 * FloatBetween(0, 0.5)
+          )
+          .setTint(GetRandom(tints));
+      }
+
+      function updateParticleRotation(p) {
+        return RadToDeg(Math.atan2(p.velocityY, p.velocityX));
+      }
+
+      new Phaser.Game(config);
+    </script>
+  </body>
+</html>

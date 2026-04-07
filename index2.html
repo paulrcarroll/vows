@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phaser 3 Celebration</title>
+    <script src="phaser.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0f0c29;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        backgroundColor: "#0f0c29",
+        scene: {
+          preload: preload,
+          create: create,
+        },
+      };
+
+      const game = new Phaser.Game(config);
+
+      function preload() {
+        // Create a small white square for the confetti
+        let graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        graphics.fillStyle(0xffffff, 1);
+        graphics.fillRect(0, 0, 8, 8);
+        graphics.generateTexture("particle", 8, 8);
+      }
+
+      function create() {
+        const textList = [
+          "AWESOME!",
+          "YOU WIN!",
+          "LEVEL UP!",
+          "HOORAY!",
+          "PERFECT!",
+        ];
+        let currentIndex = 0;
+
+        // 1. Setup the Emitter
+        const emitter = this.add.particles(0, 0, "particle", {
+          speed: { min: -150, max: 150 },
+          angle: { min: 0.1, max: 1 },
+          scale: { start: 1, end: 0 },
+          lifespan: 1200,
+          gravityY: 300,
+          frequency: 40,
+          blendMode: "SCREEN",
+          emitting: false,
+        });
+
+        const runSequence = () => {
+          if (currentIndex >= textList.length) currentIndex = 0;
+          const currentText = textList[currentIndex++];
+
+          // 2. Create Text at the bottom
+          const textObj = this.add
+            .text(400, 550, currentText, {
+              fontFamily: "Arial Black",
+              fontSize: "80px",
+              color: "#f9ed69",
+              stroke: "#b83b5e",
+              strokeThickness: 12,
+            })
+            .setOrigin(0.5)
+            .setAlpha(0);
+
+          // 3. Attach Emitter and start
+          emitter.startFollow(textObj);
+          emitter.start();
+          // Randomize colors for each new word
+          emitter.setConfig({
+            tint: [0xff0000, 0xffff00, 0x00ff00, 0x00ffff, 0xff00ff],
+          });
+
+          // 4. Main Animation: Rise, Scale, and Fade
+          this.tweens.add({
+            targets: textObj,
+            y: 150,
+            alpha: { from: 0, to: 1 },
+            scale: { from: 0.2, to: 1.2 },
+            duration: 4000,
+            ease: "Cubic.out",
+            onComplete: () => {
+              // Quick fade out at the top
+              this.tweens.add({
+                targets: textObj,
+                alpha: 0,
+                scale: 1.5,
+                duration: 500,
+                onComplete: () => {
+                  emitter.stop();
+                  textObj.destroy();
+                  // Delay slightly before the next word
+                  this.time.delayedCall(500, runSequence);
+                },
+              });
+            },
+          });
+        };
+
+        runSequence();
+      }
+    </script>
+  </body>
+</html>
