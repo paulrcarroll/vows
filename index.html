@@ -45,8 +45,7 @@
           create,
         },
         loader: {
-          //http://127.0.0.1:5500
-          //https://vows-pi.vercel.app/
+          //baseUrl: "http://127.0.0.1:5500",
           baseURL: "https://vows-pi.vercel.app",
           crossOrigin: "anonymous",
         },
@@ -73,7 +72,7 @@
       const { GetRandom } = Phaser.Utils.Array;
 
       function init() {
-        const stars = this.textures.createCanvas("stars", 1024, 768);
+        const stars = this.textures.createCanvas("stars", 1624, 900);
         const ctx = stars.getContext();
         const { black, white } = colors.cssColors;
 
@@ -118,10 +117,20 @@
           "Two cats!",
         ];
         let currentIndex = 0;
+        let vowIndex = 0;
 
         this.add.image(0, 0, "stars").setOrigin(0, 0);
 
-        this.add.image(100, 500, "img3").setScale(0.3).setAlpha(0.6);
+        const photos = [];
+        photos.push(
+          this.add.image(200, 500, "img1").setScale(0.4).setAlpha(0.6)
+        );
+        photos.push(
+          this.add.image(200, 500, "img2").setScale(0.4).setAlpha(0.6)
+        );
+        photos.push(
+          this.add.image(200, 500, "img3").setScale(0.4).setAlpha(0.6)
+        );
 
         const particles = this.add.particles("rocket");
 
@@ -179,6 +188,20 @@
             .setOrigin(0.5)
             .setAlpha(0);
 
+          if (vowIndex >= vows.length) vowIndex = 0;
+          const currentVow = vows[vowIndex++];
+
+          const vowText = this.add
+            .text(400, 550, currentVow, {
+              fontFamily: "Times",
+              fontSize: "40px",
+              color: "#4466aa",
+              stroke: "#aaaa44",
+              strokeThickness: 8,
+            })
+            .setOrigin(0.5)
+            .setAlpha(0);
+
           // 4. Main Animation: Rise, Scale, and Fade
           this.tweens.add({
             targets: textObj,
@@ -197,7 +220,30 @@
                 onComplete: () => {
                   textObj.destroy();
                   // Delay slightly before the next word
-                  this.time.delayedCall(500, runSequence);
+                  this.time.delayedCall(300, runSequence);
+                },
+              });
+            },
+          });
+
+          this.tweens.add({
+            targets: vowText,
+            y: 450,
+            alpha: { from: 0, to: 1 },
+            scale: { from: 0.2, to: 1.2 },
+            duration: 2000,
+            ease: "Cubic.out",
+            onComplete: () => {
+              // Quick fade out at the top
+              this.tweens.add({
+                targets: vowText,
+                alpha: 0,
+                scale: 1.5,
+                duration: 500,
+                onComplete: () => {
+                  vowText.destroy();
+                  // Delay slightly before the next word
+                  //this.time.delayedCall(100, runSequence);
                 },
               });
             },
@@ -205,6 +251,76 @@
         };
 
         runSequence();
+        startFadingLoop(this, photos);
+      }
+
+      const vows = [
+        "Will you always listen closely to each other\n and value each other’s perspective?",
+        "Do you promise to never rush to judgment and always assume love first",
+        "Will you always make each other your top priority and try to\n keep growing as individuals and as a couple",
+        "Will you encourage each other \nto follow your dreams \nwhile making decisions that serve\n your future together",
+        "Will you try to learn from each other \nand find value in your differences",
+        "Will you continue to give each other cards that have\n no relevance to the occasion, just because the card is cool?",
+        "No matter how busy life gets\n will you try to connect \nover dinner, at the dining table as often as possible?",
+        "Will you always share activities\n that bring you closer together?",
+        "Will you always find the fun in things and\n never take yourselves too seriously?",
+        "Will you always make time to be present with each other?",
+        "Will you try to make everything you do fun, \nwhether we’re exploring or just running errands?",
+        "Do you promise to travel with me and be my \nplaymate and partner in crime through\n all life’s adventures",
+        "Do you promise to always reach for my hand\n whenever we walk down the street",
+        "Will you build a nice garden with me?",
+        "Will you continue to say ‘well it’s not like\n I know what I’m doing’ when I point \nout that a plant looks sickly",
+        "Do you promise to buy me appropriately themed boxers\n for every trip we go on?",
+        "Can we go right now?",
+        "To be fond of dancing was a certain step towards\n falling in love. —Jane Austen, Pride and Prejudice",
+        "Will you dance at every opportunity",
+        "Do you agree that the correct number of cats is zero?",
+        "Do you promise to light a fire even when it’s 70 degrees out?",
+        "Would you say that I require patience?",
+        "Do you promise to give me cards and flowers \non the flimsiest of pretenses",
+        "Do you promise that you will follow my \ninstructions without regard for your\n personal safety or better judgement?",
+        "Do you promise to adore me and challenge me\n in the perfect way to bring out\n the best in me?",
+        "Do you agree that the unlikeliness\n of our relationship is proof that I live in a simulation?",
+        "Do you promise to believe and trust in strength\n of our relationship, even when things get tricky?",
+        "Do you promise to always cover my eyes \nwhen you think things are about to get\n scary on TV",
+        "Will you be my reason to \nbe better every day?",
+        "Do you promise to believe in me",
+      ];
+
+      function startFadingLoop(scene, images) {
+        let index = 0;
+
+        // Initial state: hide everything except the first image
+        images.forEach((img, i) => img.setAlpha(i === 0 ? 1 : 0));
+
+        const transition = () => {
+          const currentImg = images[index];
+          index = (index + 1) % images.length; // Move to next index or reset to 0
+          const nextImg = images[index];
+
+          // Fade out the current image
+          scene.tweens.add({
+            targets: currentImg,
+            alpha: 0,
+            duration: 1000,
+            ease: "Power2",
+          });
+
+          // Fade in the next image
+          scene.tweens.add({
+            targets: nextImg,
+            alpha: 1,
+            duration: 1000,
+            ease: "Power2",
+            onComplete: () => {
+              // Pause for 2 seconds before the next transition
+              scene.time.delayedCall(2000, transition);
+            },
+          });
+        };
+
+        // Kick off the first delay
+        scene.time.delayedCall(2000, transition);
       }
 
       function updateEmitter(emitter) {
